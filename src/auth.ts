@@ -1,14 +1,12 @@
 import NextAuth, { CredentialsSignin, NextAuthConfig, User } from "next-auth"
 import GitHub from "next-auth/providers/github"
 import Credentials from "next-auth/providers/credentials"
+import Resend from "next-auth/providers/resend"
 import { getUserFromDb } from "./utils/db"
 import { Provider } from "next-auth/providers"
 import { MongoDBAdapter } from "@auth/mongodb-adapter"
 import client from "@/utils/mongodb"
 import { AdapterUser } from "next-auth/adapters"
-import { randomUUID } from "crypto"
-import { Auth } from "mongodb"
-import { cookies } from "next/headers.js";
 
 export interface AuthUser extends AdapterUser {
   role: string
@@ -30,6 +28,9 @@ const providers: Provider[] = [
       } as AuthUser
     },
   }), 
+  Resend({
+    apiKey: process.env.AUTH_RESEND_KEY,
+  }),
   Credentials({
     credentials: {
       Email: {

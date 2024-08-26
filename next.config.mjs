@@ -1,10 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   env: {
-    NEXTAUTH_SECRET: 'your-secret-key-here', 
-    NEXTAUTH_GITHUB_CLIENT_ID:'Ov23lignxIYtPLkuAsgE',
-    NEXTAUTH_GITHUB_CLIENT_SECRET:'07669a2f9271632ab700f2b6c493bfd8de0f2bc3',
-    MONGODB_URI:'mongodb://127.0.0.1:27017'
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET, 
+    NEXTAUTH_GITHUB_CLIENT_ID:process.env.NEXTAUTH_GITHUB_CLIENT_ID,
+    NEXTAUTH_GITHUB_CLIENT_SECRET:process.env.NEXTAUTH_GITHUB_CLIENT_SECRET,
+    MONGODB_URI:process.env.MONGODB_URI,
+    AUTH_RESEND_KEY:process.env.AUTH_RESEND_KEY
   }
 };
 
