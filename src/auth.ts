@@ -1,18 +1,15 @@
-import NextAuth, { CredentialsSignin, NextAuthConfig, User } from "next-auth"
+import NextAuth, { CredentialsSignin } from "next-auth"
 import GitHub from "next-auth/providers/github"
 import Credentials from "next-auth/providers/credentials"
 import Resend from "next-auth/providers/resend"
 import { getUserFromDb } from "./utils/db"
 import { Provider } from "next-auth/providers"
-import { MongoDBAdapter } from "@auth/mongodb-adapter"
-import client from "@/utils/mongodb"
 import { AdapterUser } from "next-auth/adapters"
+import { monogoAdapter } from "./utils/mongodb"
 
 export interface AuthUser extends AdapterUser {
   role: string
 }
-
-const monogoAdapter = MongoDBAdapter(client, { databaseName: "nextauth" });
 
 const providers: Provider[] = [
   GitHub({
@@ -54,19 +51,8 @@ const providers: Provider[] = [
       }
       const { Email, Password } = credentials
 
-      //const user = await getUserFromDb(Email as string, Password as string);
-      let userDB = await monogoAdapter.getUserByEmail!(Email as string);
-      if (!userDB) {
-        userDB = {
-          id: "1",
-          name: "Admin",
-          email: Email as string,
-          image: "",
-          role: "admin"
-        } as AuthUser
-        userDB = await monogoAdapter.createUser!(userDB);
-      }
-      return userDB
+      const user = await getUserFromDb(Email as string, Password as string);
+      return user
     },    
   })
 ]
