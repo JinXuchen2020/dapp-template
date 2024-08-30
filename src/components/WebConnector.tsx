@@ -1,104 +1,62 @@
 'use client'
 import { useEffect, useState } from "react";
-import Web3, { Address, Contract, Uint256 } from "web3";
+import Web3, { Address, Contract, Uint, Uint256 } from "web3";
 import cryptoZombiesABI from "../contracts/CryptoZombies.json"
+import { Button } from "./ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
+import { ZombieModel } from "@/models/ZombieModel";
+import { Label } from "./ui/label";
+import { attack, getMessages, getZombies, initZombies, levelUp, setCryptoZombies } from "@/app/actions/contract";
 
 const WebConnector = () => {
-  const [account, setAccount] = useState<Address>();
-  const [message, setMessage] = useState<string>();
+  const [accounts, setAccounts] = useState<Address[]>();
+  const [messages, setMessages] = useState<string[]>([]);
+  const [zombieModels, setZombieModels] = useState<{[key: Address]: ZombieModel[]}>({});
+  const [selectedZombies, setSelectedZombies] = useState<{[key: Address]: Uint256}>({});
 
-  const [cryptoZombies, setCryptoZombies] = useState<Contract<any>>();
+  let isInitialized = false;
 
-  const getZombieDetails = (id: Uint256) => {
-    return cryptoZombies!.methods.zombies(id).call()
-  }
-
-  // 1. Define `zombieToOwner` here
-  const zombieToOwner = (id: Uint256) =>  {
-    return cryptoZombies!.methods.zombieToOwner(id).call()
-  }
-
-  // 2. Define `getZombiesByOwner` here
-  const getZombiesByOwner = async (owner: Address) => {
-    return cryptoZombies!.methods.getZombiesByOwner(owner).call();
-  }
-
-  const displayZombies = (ids: Uint256[]) => {
-    for (let id of ids) {
-      getZombieDetails(id).then((zombie: any) => {
-        console.log(zombie);
-      })
-    }
-  }
-
-  const createRandomZombie =(name: string) => {
+  const attackZombie = (account: Address, zombieId: Uint256) => {
     // 这将需要一段时间，所以在界面中告诉用户这一点
     // 事务被发送出去了
-    setMessage("正在区块链上创建僵尸，这将需要一会儿...");
-    // 把事务发送到我们的合约:
-    return cryptoZombies!.methods.createRandomZombie(name)
-    .send({ from: account })
-    .on("receipt", function(receipt) {
-      setMessage("成功生成了 " + name + "!");
-      // 事务被区块链接受了，重新渲染界面
-      getZombiesByOwner(account!).then((ids: any) => displayZombies(ids));
-    })
-    .on("error", function(error) {
-      // 告诉用户合约失败了
-      setMessage(error.message);
-    });
-  }
-
-  const feedOnKitty =(zombieId: Uint256, kittyId: Uint256) => {
-    // 这将需要一段时间，所以在界面中告诉用户这一点
-    // 事务被发送出去了
-    setMessage("正在吃猫咪，这将需要一会儿...");
-    // 把事务发送到我们的合约:
-    return cryptoZombies!.methods.feedOnKitty(zombieId, kittyId)
-    .send({ from: account })
-    .on("receipt", function(receipt) {
-      setMessage("吃了一只猫咪并生成了一只新僵尸!");
-      // 事务被区块链接受了，重新渲染界面
-      getZombiesByOwner(account!).then((ids: any) => displayZombies(ids));
-    })
-    .on("error", function(error) {
-      // 告诉用户合约失败了
-      setMessage(JSON.stringify(error));
-    });
-  }
-
-  const levelUp = (zombieId: Uint256) => {
-    setMessage("正在升级您的僵尸...");
-    return cryptoZombies!.methods.levelUp(zombieId)
-    .send({ from: account, value: Web3.utils.toWei("0.001","ether") })
-    .on("receipt", function(receipt) {
-      setMessage("不得了了！僵尸成功升级啦！");
-    })
-    .on("error", function(error) {
-      setMessage(JSON.stringify(error));
-    });
-  }
-
-  const startApp = async () => {
-    cryptoZombies!.events.NewZombie({ fromBlock: "latest" }).on("data", function(event) {
-      console.log(event);
-      // 重新渲染界面
-      getZombiesByOwner(account!).then((ids: any) => displayZombies(ids));
-    });
-    await initZombies();
-  }
-
-  const initZombies = async() => {
-    const zombies = await getZombiesByOwner(account!);
-    if(zombies && zombies.length === 0) {
-      setMessage("正在初始化僵尸...");
-      createRandomZombie("CryptoZombie #1").then(() => {
-        setMessage("初始化僵尸完成...");
-      });
+    if (Object.keys(selectedZombies).length === 0) {
+      setSelectedZombies({...selectedZombies, [account]: zombieId})
     }
     else {
-      setMessage("初始化僵尸完成...");
+      const attackAccount = Object.keys(selectedZombies)[0];
+      const attackZombieId = selectedZombies[attackAccount];
+      attack(attackAccount, attackZombieId, account, zombieId).then(async () => {
+        const attackResult = await getZombies(attackAccount);
+        const targetResult = await getZombies(account);
+        setZombieModels({...zombieModels, [attackAccount]: attackResult, [account]: targetResult});
+        const newMessages = getMessages();
+        setMessages([...newMessages]);
+        setSelectedZombies({});
+      });
+    }    
+  }
+
+  const levelUpZombie = (account: Address, zombieId: Uint256) => {
+    levelUp(account, zombieId).then(async() => {
+      const result = await getZombies(account);
+      setZombieModels({...zombieModels, [account]: result});
+      const newMessages = getMessages();
+      setMessages([...newMessages]);
+    });    
+  }
+
+  const startApp = async (accounts: Address[]) => {
+    // cryptoZombies!.events.NewZombie({ fromBlock: "latest" }).on("data", function(event) {
+    //   console.log(event);
+    //   // 重新渲染界面
+    //   // getZombiesByOwner(account!).then((ids: any) => displayZombies(ids));
+    // });
+    for (const account of accounts) {
+      await initZombies(account);
     }
+
+    const newMessages = getMessages();
+    setMessages([...newMessages]);
   }
 
   useEffect(() => {
@@ -132,26 +90,59 @@ const WebConnector = () => {
         console.log("No web3 instance found");
       }
     };
-    loadWeb3().then((accounts: any) => {
-      if (accounts && accounts.length > 0) {
-        setAccount(accounts[0]);
+    loadWeb3().then((res: any) => {
+      if (res && !isInitialized) {
+        isInitialized = true;
+        setAccounts(res);
+        startApp(res);
       }
     });
   }, []);
 
-  useEffect(() => {
-    if (window.web3 && account) {
-      startApp();
-    }
-  }, [account]);
-
   return (
-    <div>
+    <div className="flex flex-col gap-4">
       <h1>Web3.js with Next.js</h1>
-      <p>Account: {account || 'No account connected'}</p>
-      <p>Message: {message || ''}</p>
-      <button onClick={() => getZombiesByOwner(account!).then((ids: any) => displayZombies(ids))}>Get Zombies</button>
-      <button onClick={() => levelUp("0")}>level up Zombies</button>
+      <div className="flex flex-row space-x-2">
+        {
+          accounts && accounts.map((account: Address, index: number) => {
+            return <div className="flex flex-col gap-2" key={account}>
+              <p>Account: {account || 'No account connected'}</p>
+              <div className="flex flex-row space-x-2">
+                <Button size={"sm"} onClick={() => getZombies(account).then((res: any) => setZombieModels({...zombieModels, [account]: res}))}>Get Zombies</Button>        
+              </div>
+              {
+                zombieModels[account] && zombieModels[account].map((zombie: ZombieModel, index: number) => {
+                  return <Card key={index} onClick={() => attackZombie(account, zombie.id)}>
+                    <CardHeader>
+                      <CardTitle>{zombie.name}</CardTitle>
+                      <CardDescription>Level: {zombie.level}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p>DNA: {zombie.dna}</p>
+                      <p>WinCount: {zombie.winCount}</p>
+                      <p>LoseCount: {zombie.loseCount}</p>
+                      <p>ReadTime: {zombie.readyTime}</p>
+                    </CardContent>
+                    <CardFooter>
+                      <Button size={"sm"} onClick={(events) => {
+                        events.stopPropagation();
+                        levelUpZombie(account, zombie.id);
+                      }}>Level up</Button>
+                    </CardFooter>
+                  </Card>
+                })
+              }
+            </div>
+          })
+        }
+      </div>      
+      <div className="flex flex-col gap-2">
+        {
+          messages && messages.map((message: string, index: number) => {
+            return <Label key={index}>{message}</Label>              
+          })
+        }
+      </div>     
     </div>
   );
 }

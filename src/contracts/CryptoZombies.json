@@ -17642,10 +17642,16 @@
       "links": {},
       "address": "0x4A1143535C3B94AdD412da6223ADbBe651908bbb",
       "transactionHash": "0x177758c1bee7b8f59a7dd864af3915bc09fddd30923cd86b207454861c18dfd6"
+    },
+    "1724999878269": {
+      "events": {},
+      "links": {},
+      "address": "0x93C173787b672E9e869a8f87b768811ed117Df12",
+      "transactionHash": "0xcbb8d186d71e6f3a2b892aab45d3857ef24c5f69b9cb43a073393b4f6ed37f36"
     }
   },
   "schemaVersion": "3.4.16",
-  "updatedAt": "2024-08-16T08:15:32.689Z",
+  "updatedAt": "2024-08-30T06:52:17.835Z",
   "networkType": "ethereum",
   "devdoc": {
     "errors": {
