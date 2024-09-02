@@ -6,6 +6,7 @@ let messages: string[] = [];
 
 export const setCryptoZombies = (contract: Contract<any>) => {
   cryptoZombies = contract;
+  messages = [];
 }
 
 export const getMessages = () => {

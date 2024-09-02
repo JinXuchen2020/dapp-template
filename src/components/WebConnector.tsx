@@ -16,6 +16,11 @@ const WebConnector = () => {
 
   let isInitialized = false;
 
+  const displayZombies = async (account: Address) => {
+    const result = await getZombies(account);
+    setZombieModels({...zombieModels, [account]: result});
+  }
+
   const attackZombie = (account: Address, zombieId: Uint256) => {
     // 这将需要一段时间，所以在界面中告诉用户这一点
     // 事务被发送出去了
@@ -108,7 +113,7 @@ const WebConnector = () => {
             return <div className="flex flex-col gap-2" key={account}>
               <p>Account: {account || 'No account connected'}</p>
               <div className="flex flex-row space-x-2">
-                <Button size={"sm"} onClick={() => getZombies(account).then((res: any) => setZombieModels({...zombieModels, [account]: res}))}>Get Zombies</Button>        
+                <Button size={"sm"} onClick={() => displayZombies(account) }>Get Zombies</Button>        
               </div>
               {
                 zombieModels[account] && zombieModels[account].map((zombie: ZombieModel, index: number) => {
@@ -139,7 +144,7 @@ const WebConnector = () => {
       <div className="flex flex-col gap-2">
         {
           messages && messages.map((message: string, index: number) => {
-            return <Label key={index}>{message}</Label>              
+            return <Label key={index}>{message}</Label>
           })
         }
       </div>     
